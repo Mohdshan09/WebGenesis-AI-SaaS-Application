@@ -23,10 +23,9 @@ export const MessagesContainer = ({
   const { data: messages } = useSuspenseQuery(
     trpc.messages.getMany.queryOptions(
       {
-    projectId,
+        projectId,
       },
-      //TODO: temporary live message update
-      { refetchInterval: 5000 }
+      { refetchInterval: 2000 }
     )
   );
 
@@ -42,7 +41,7 @@ export const MessagesContainer = ({
   }, [messages, setActiveFragment]);
 
   useEffect(() => {
-      bottomRef.current?.scrollIntoView();
+    bottomRef.current?.scrollIntoView();
   }, [messages.length]);
 
   const lastMessage = messages[messages.length - 1];
@@ -72,8 +71,8 @@ export const MessagesContainer = ({
       {/* Message Form */}
       <div className="relative p-3 pt-1 ">
         <div className="absolute -top-6 left-0 right-0 h-6 bg-gradient-to-b from-transparent to-background/70 pointer-events-none" />{" "}
-      <Messageform projectId={projectId} />
-    </div>
+        <Messageform projectId={projectId} />
+      </div>
     </div>
   );
 };
