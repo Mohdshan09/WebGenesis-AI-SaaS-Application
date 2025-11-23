@@ -10,20 +10,16 @@ interface Props {
   };
 }
 
-const Page = async ({ params }: Props) => {
-  const { projectId } = params;
+export default async function Page({ params }: Props) {
+  const { projectId } = await params;
   const queryClient = getQueryClient();
 
   await Promise.all([
     queryClient.prefetchQuery(
-      trpc.messages.getMany.queryOptions({
-        projectId,
-      })
+      trpc.messages.getMany.queryOptions({ projectId })
     ),
     queryClient.prefetchQuery(
-      trpc.projects.getOne.queryOptions({
-        id: projectId,
-      })
+      trpc.projects.getOne.queryOptions({ id: projectId })
     ),
   ]);
 
@@ -31,11 +27,9 @@ const Page = async ({ params }: Props) => {
     <HydrationBoundary state={dehydrate(queryClient)}>
       <ErrorBoundary fallback={<p>Something went wrong.</p>}>
         <Suspense fallback={<p>Loading...</p>}>
-        <ProjectView projectId={projectId} />
-      </Suspense>
+          <ProjectView projectId={projectId} />
+        </Suspense>
       </ErrorBoundary>
     </HydrationBoundary>
   );
-};
-
-export default Page;
+}
