@@ -3,10 +3,10 @@ import { inngest } from "./client";
 import { Sandbox } from "@e2b/code-interpreter";
 import { getSandBox } from "./utils";
 import { FRAGMENT_TITLE_PROMPT, PROMPT, RESPONSE_PROMPT } from "./prompt";
-import prisma from "@/lib/db";
 import Groq from "groq-sdk";
 import { createState, type Message } from "@inngest/agent-kit";
 import { SANDBOX_TIMEOUT } from "./types";
+import { prisma } from "@/lib/db";
 
 interface AgentState {
   summary: string;
@@ -16,8 +16,6 @@ interface AgentState {
 // Initialize Groq client
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
-
-  
 });
 
 // Helper function to call Groq
@@ -31,7 +29,7 @@ async function callGroq(systemPrompt: string, userPrompt: string) {
     temperature: 0.7,
     max_tokens: 4000,
   });
-  
+
   return response.choices[0].message.content || "";
 }
 
@@ -160,32 +158,35 @@ export const codeAgentFunction = inngest.createFunction(
 
     const sandboxId = await step.run("create-sandbox", async () => {
       const s = await Sandbox.create("web-test");
-        await s.setTimeout(SANDBOX_TIMEOUT);
+      await s.setTimeout(SANDBOX_TIMEOUT);
       return s.sandboxId;
     });
 
-    const previousMessages = await step.run("get-previous-messages", async () => {
-      const formattedMessages: Message[] = [];
-      const messages = await prisma.message.findMany({
-        where: {
-          projectId: event.data.projectId,
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-        take: 5,
-      });
-
-      for (const message of messages) {
-        formattedMessages.push({
-          type: "text",
-          role: message.role === "ASSISTANT" ? "assistant" : "user",
-          content: message.content,
+    const previousMessages = await step.run(
+      "get-previous-messages",
+      async () => {
+        const formattedMessages: Message[] = [];
+        const messages = await prisma.message.findMany({
+          where: {
+            projectId: event.data.projectId,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 5,
         });
-      }
 
-      return formattedMessages;
-    });
+        for (const message of messages) {
+          formattedMessages.push({
+            type: "text",
+            role: message.role === "ASSISTANT" ? "assistant" : "user",
+            content: message.content,
+          });
+        }
+
+        return formattedMessages;
+      }
+    );
 
     const state = createState<AgentState>(
       {
@@ -285,7 +286,7 @@ export const codeAgentFunction = inngest.createFunction(
     console.log("Sandbox URL:", sandBoxUrl);
 
     const filesWithContent: { [path: string]: string } = {};
-    
+
     if (toolResult?.updated && Array.isArray(toolResult.updated)) {
       for (const filePath of toolResult.updated) {
         try {
@@ -304,14 +305,17 @@ export const codeAgentFunction = inngest.createFunction(
     };
 
     // Generate fragment title using Groq
-    const fragmentTitleOutput = await step.run("generate-fragment-title", async () => {
-      try {
-        return await callGroq(FRAGMENT_TITLE_PROMPT, agentState.summary);
-      } catch (error) {
-        console.error("Fragment title generation error:", error);
-        return "Generated Page";
+    const fragmentTitleOutput = await step.run(
+      "generate-fragment-title",
+      async () => {
+        try {
+          return await callGroq(FRAGMENT_TITLE_PROMPT, agentState.summary);
+        } catch (error) {
+          console.error("Fragment title generation error:", error);
+          return "Generated Page";
+        }
       }
-    });
+    );
 
     // Generate response using Groq
     const responseOutput = await step.run("generate-response", async () => {
