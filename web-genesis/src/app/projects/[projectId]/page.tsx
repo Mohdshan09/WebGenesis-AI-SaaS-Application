@@ -4,14 +4,13 @@ import { dehydrate, HydrationBoundary } from "@tanstack/react-query";
 import { ErrorBoundary } from "react-error-boundary";
 import { Suspense } from "react";
 
-interface Props {
-  params: {
-    projectId: string;
-  };
-}
+export default async function Page({
+  params,
+}: {
+  params: { projectId: string };
+}) {
+  const { projectId } = params;
 
-export default async function Page({ params }: Props) {
-  const { projectId } = await params;
   const queryClient = getQueryClient();
 
   await Promise.all([
